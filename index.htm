@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathiverse - Interactive Math & Animation Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        mathPurple: '#8B5CF6',
+                        mathPink: '#EC4899',
+                        mathCyan: '#06B6D4',
+                        mathDark: '#0F172A',
+                        mathCard: '#1E293B'
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+                            '50%': { transform: 'translateY(-20px) rotate(10deg)' }
+                        },
+                        popup: {
+                            '0%': { transform: 'scale(0.8) translateY(20px)', opacity: '0' },
+                            '70%': { transform: 'scale(1.05) translateY(-5px)', opacity: '1' },
+                            '100%': { transform: 'scale(1) translateY(0)', opacity: '1' }
+                        },
+                        glowPulse: {
+                            '0%, 100%': { filter: 'drop-shadow(0 0 15px rgba(139, 92, 246, 0.6))' },
+                            '50%': { filter: 'drop-shadow(0 0 25px rgba(236, 72, 153, 0.8))' }
+                        }
+                    },
+                    animation: {
+                        'float-slow': 'float 6s ease-in-out infinite',
+                        'float-fast': 'float 3s ease-in-out infinite',
+                        'popup': 'popup 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'glow': 'glowPulse 3s infinite'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome & KaTeX for LaTeX expressions -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <!-- Chart.js for function plotting -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+        
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #0B0F19;
+            color: #F8FAFC;
+            overflow-x: hidden;
+        }
+
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0F172A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8B5CF6;
+        }
+
+        /* Bouncy Pop Effect for buttons */
+        .btn-bounce {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .btn-bounce:hover {
+            transform: scale(1.08) translateY(-3px);
+            box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.4);
+        }
+        .btn-bounce:active {
+            transform: scale(0.95);
+        }
+
+        /* Canvas Overlay Styles */
+        .canvas-card {
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* Floating Math Particle */
+        .math-symbol {
+            position: absolute;
+            pointer-events: none;
+            user-select: none;
+            opacity: 0.15;
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            transition: opacity 0.3s;
+        }
+
+        /* Pop-up modal animation */
+        .modal-pop {
+            animation: popup 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative selection:bg-mathPink selection:text-white">
+
+    <!-- Dynamic Floating Background Math Symbols -->
+    <div id="math-bg" class="fixed inset-0 overflow-hidden pointer-events-none z-0"></div>
+
+    <!-- Navigation Bar -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Logo -->
+            <div class="flex items-center gap-3 cursor-pointer group" onclick="switchTab('factoriser')">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-mathPurple via-mathPink to-mathCyan p-0.5 animate-glow">
+                    <div class="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center">
+                        <i class="fa-solid font-bold text-transparent bg-clip-text bg-gradient-to-r from-mathPink to-mathCyan text-xl">f(x)</i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+                        Mathiverse
+                    </h1>
+                    <p class="text-xs text-slate-400 font-light">Interactive Calculators & Visual Proofs</p>
+                </div>
+            </div>
+
+            <!-- Tab Navigation Buttons -->
+            <nav class="flex flex-wrap justify-center items-center gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800">
+                <button onclick="switchTab('factoriser')" id="tab-factoriser" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 bg-gradient-to-r from-mathPurple to-mathPink text-white shadow-lg">
+                    <i class="fa-solid font-mono text-xs">#</i> Factoriser & Prime
+                </button>
+                <button onclick="switchTab('calculators')" id="tab-calculators" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-calculator text-xs"></i> Calculators & Plotter
+                </button>
+                <button onclick="switchTab('animations')" id="tab-animations" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xs"></i> Math Visualizations
+                </button>
+                <button onclick="switchTab('explorer')" id="tab-explorer" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-shapes text-xs"></i> Geometry & Constants
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto w-full px-4 lg:px-8 py-8 flex-1 z-10 relative">
+
+        <!-- ================= SECTION 1: FACTORISER & PRIME TOOL ================= -->
+        <section id="section-factoriser" class="tab-content block space-y-8 animate-popup">
+            <div class="text-center max-w-2xl mx-auto space-y-3">
+                <span class="px-3 py-1 bg-mathPurple/20 text-mathPurple border border-mathPurple/30 rounded-full text-xs font-semibold uppercase tracking-wider">Number Theory Powerhouse</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-100">Smart Factoriser & Prime Analyzer</h2>
+                <p class="text-slate-400 text-sm md:text-base">Decompose any positive integer into its prime factors, analyze parity, find all divisibility factors, and visualize factorization trees!</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Input Card -->
+                <div class="lg:col-span-1 glass-panel rounded-3xl p-6 space-y-6 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-slate-300">Enter positive integer:</label>
+                        <div class="relative">
+                            <input type="number" id="factor-input" value="1260" min="1" max="9999999999" 
+                                class="w-full bg-slate-900 border-2 border-slate-700 focus:border-mathPurple rounded-2xl px-4 py-3.5 text-xl font-bold code-font text-purple-300 outline-none transition-all pr-12 shadow-inner">
+                            <button onclick="randomizeFactorInput()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-mathPink p-2 transition-colors" title="Random Number">
+                                <i class="fa-solid fa-dice text-lg"></i>
+                            </button>
+                        </div>
+
+                        <!-- Quick Number Chips -->
+                        <div class="space-y-2">
+                            <span class="text-xs text-slate-400">Try these interesting numbers:</span>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="setFactorInput(360)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg text-slate-300 btn-bounce">360</button>
+                                <button onclick="setFactorInput(1024)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg text-slate-300 btn-bounce">1024</button>
+                                <button onclick="setFactorInput(9999)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg text-slate-300 btn-bounce">9999</button>
+                                <button onclick="setFactorInput(104729)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg text-slate-300 btn-bounce">104729 (Prime)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="calculateFactors()" class="w-full py-4 bg-gradient-to-r from-mathPurple via-mathPink to-mathCyan text-white font-bold text-lg rounded-2xl btn-bounce shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-calculator"></i> Factorise Now
+                    </button>
+                </div>
+
+                <!-- Results Dashboard -->
+                <div class="lg:col-span-2 glass-panel rounded-3xl p-6 space-y-6 flex flex-col justify-between">
+                    <div class="space-y-6">
+                        <!-- Stat Highlights -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-center">
+                                <p class="text-xs text-slate-400 mb-1">Status</p>
+                                <span id="res-type" class="text-sm font-bold text-mathCyan">--</span>
+                            </div>
+                            <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-center">
+                                <p class="text-xs text-slate-400 mb-1">Total Factors</p>
+                                <span id="res-count" class="text-lg font-extrabold text-mathPink">--</span>
+                            </div>
+                            <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-center">
+                                <p class="text-xs text-slate-400 mb-1">Factor Sum</p>
+                                <span id="res-sum" class="text-sm font-bold code-font text-purple-300">--</span>
+                            </div>
+                            <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-center">
+                                <p class="text-xs text-slate-400 mb-1">Perfect Square?</p>
+                                <span id="res-square" class="text-sm font-bold text-yellow-400">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Prime Factorization Display -->
+                        <div class="space-y-2">
+                            <h3 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-atom text-mathPink"></i> Prime Factorization Exponential Form:
+                            </h3>
+                            <div id="prime-factor-latex" class="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-xl md:text-2xl text-center text-mathPink min-h-[60px] flex items-center justify-center overflow-x-auto">
+                                Select a number to calculate
+                            </div>
+                        </div>
+
+                        <!-- All Factors Grid -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                                    <i class="fa-solid fa-list-check text-mathCyan"></i> All Factors:
+                                </h3>
+                                <button onclick="copyFactorsList()" class="text-xs text-mathCyan hover:underline flex items-center gap-1">
+                                    <i class="fa-regular fa-copy"></i> Copy List
+                                </button>
+                            </div>
+                            <div id="all-factors-container" class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 max-h-40 overflow-y-auto flex flex-wrap gap-2">
+                                <span class="text-slate-500 text-sm">Factors will appear here...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= SECTION 2: CALCULATORS & GRAPH PLOTTER ================= -->
+        <section id="section-calculators" class="tab-content hidden space-y-8 animate-popup">
+            <div class="text-center max-w-2xl mx-auto space-y-2">
+                <span class="px-3 py-1 bg-mathPink/20 text-mathPink border border-mathPink/30 rounded-full text-xs font-semibold uppercase tracking-wider">Interactive Math Workbench</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-100">Calculators & Function Plotter</h2>
+                <p class="text-slate-400 text-sm">Scientific keypads, root solver, and dynamic 2D function visualizer.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Interactive Scientific Calculator -->
+                <div class="lg:col-span-5 glass-panel rounded-3xl p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <span class="text-base font-bold text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-calculator text-mathPurple"></i> Scientific Calculator
+                        </span>
+                        <span id="calc-mode" class="text-xs px-2 py-0.5 bg-mathPurple/20 text-mathPurple rounded-md font-mono">DEG</span>
+                    </div>
+
+                    <!-- Calculator Screen -->
+                    <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-right space-y-1 shadow-inner">
+                        <div id="calc-history" class="text-xs font-mono text-slate-500 h-5 overflow-hidden"></div>
+                        <div id="calc-display" class="text-2xl md:text-3xl font-bold font-mono text-cyan-300 overflow-x-auto whitespace-nowrap">0</div>
+                    </div>
+
+                    <!-- Calculator Buttons Grid -->
+                    <div class="grid grid-cols-4 gap-2 code-font">
+                        <!-- Row 1 -->
+                        <button onclick="calcClear()" class="p-3 bg-red-500/20 text-red-300 hover:bg-red-500/30 rounded-xl font-bold btn-bounce">AC</button>
+                        <button onclick="calcDel()" class="p-3 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-xl font-bold btn-bounce">DEL</button>
+                        <button onclick="calcAppend('(')" class="p-3 bg-slate-800 text-mathPink hover:bg-slate-700 rounded-xl font-bold btn-bounce">(</button>
+                        <button onclick="calcAppend(')')" class="p-3 bg-slate-800 text-mathPink hover:bg-slate-700 rounded-xl font-bold btn-bounce">)</button>
+
+                        <!-- Row 2 -->
+                        <button onclick="calcFunc('sin')" class="p-3 bg-slate-800 text-mathCyan hover:bg-slate-700 rounded-xl font-semibold text-sm btn-bounce">sin</button>
+                        <button onclick="calcFunc('cos')" class="p-3 bg-slate-800 text-mathCyan hover:bg-slate-700 rounded-xl font-semibold text-sm btn-bounce">cos</button>
+                        <button onclick="calcFunc('tan')" class="p-3 bg-slate-800 text-mathCyan hover:bg-slate-700 rounded-xl font-semibold text-sm btn-bounce">tan</button>
+                        <button onclick="calcAppend('/')" class="p-3 bg-mathPurple/30 text-purple-200 hover:bg-mathPurple/40 rounded-xl font-bold btn-bounce">÷</button>
+
+                        <!-- Row 3 -->
+                        <button onclick="calcFunc('sqrt')" class="p-3 bg-slate-800 text-mathCyan hover:bg-slate-700 rounded-xl font-semibold text-sm btn-bounce">√</button>
+                        <button onclick="calcAppend('**')" class="p-3 bg-slate-800 text-mathCyan hover:bg-slate-700 rounded-xl font-semibold text-sm btn-bounce">x^y</button>
+                        <button onclick="calcFunc('log')" class="p-3 bg-slate-800 text-mathCyan hover:bg-slate-700 rounded-xl font-semibold text-sm btn-bounce">log</button>
+                        <button onclick="calcAppend('*')" class="p-3 bg-mathPurple/30 text-purple-200 hover:bg-mathPurple/40 rounded-xl font-bold btn-bounce">×</button>
+
+                        <!-- Row 4 (Digits & Ops) -->
+                        <button onclick="calcAppend('7')" class="p-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg btn-bounce">7</button>
+                        <button onclick="calcAppend('8')" class="p-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg btn-bounce">8</button>
+                        <button onclick="calcAppend('9')" class="p-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg btn-bounce">9</button>
+                        <button onclick="calcAppend('-')" class="p-3 bg-mathPurple/30 text-purple-200 hover:bg-mathPurple/40 rounded-xl font-bold btn-bounce">-</button>
+
+                        <!-- Row 5 -->
+                        <button onclick="calcAppend('4')" class="p-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg btn-bounce">4</button>
+                        <button onclick="calcAppend('5')" class="p-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg btn-bounce">5</button>
+                        <button onclick="calcAppend('6')" class="p-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg btn-bounce">6</button>
+                        <button onclick="calcAppend('+')" class="p-3 bg-mathPurple/30 text-purple-200 hover:bg-mathPurple/40 rounded-xl font-bold btn-bounce">+</button>
+
+                        <!-- Row 6 -->
+                        <button onclick="calcAppend('1')" class="p-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg btn-bounce">1</button>
+                        <button onclick="calcAppend('2')" class="p-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg btn-bounce">2</button>
+                        <button onclick="calcAppend('3')" class="p-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg btn-bounce">3</button>
+                        <button onclick="calcSolve()" class="row-span-2 p-3 bg-gradient-to-b from-mathPink to-mathPurple text-white rounded-xl font-bold text-xl btn-bounce flex items-center justify-center shadow-lg shadow-pink-500/30">=</button>
+
+                        <!-- Row 7 -->
+                        <button onclick="calcAppend('0')" class="col-span-2 p-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg btn-bounce">0</button>
+                        <button onclick="calcAppend('.')" class="p-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold text-lg btn-bounce">.</button>
+                    </div>
+                </div>
+
+                <!-- Function & Equation Graph Plotter -->
+                <div class="lg:col-span-7 glass-panel rounded-3xl p-6 space-y-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-4">
+                            <span class="text-base font-bold text-slate-200 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-line text-mathCyan"></i> Dynamic 2D Function Plotter
+                            </span>
+                            <div class="flex gap-2">
+                                <button onclick="setGraphPreset('sin')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg text-slate-300 btn-bounce">sin(x)</button>
+                                <button onclick="setGraphPreset('quadratic')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg text-slate-300 btn-bounce">x² - 4</button>
+                                <button onclick="setGraphPreset('dampened')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg text-slate-300 btn-bounce">exp(-x)*sin(5x)</button>
+                            </div>
+                        </div>
+
+                        <!-- Graph Controls -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                            <div class="sm:col-span-2">
+                                <label class="text-xs text-slate-400 block mb-1">Enter f(x):</label>
+                                <div class="flex gap-2">
+                                    <span class="px-3 py-2 bg-slate-900 text-mathPink rounded-xl font-bold code-font">y =</span>
+                                    <input type="text" id="graph-func-input" value="Math.sin(x) * Math.cos(x/2)" 
+                                        class="w-full bg-slate-900 border border-slate-700 focus:border-mathCyan rounded-xl px-3 py-2 code-font text-sm text-cyan-300 outline-none">
+                                </div>
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="updateChartPlot()" class="w-full py-2 bg-mathCyan/20 hover:bg-mathCyan/30 text-mathCyan border border-mathCyan/40 font-bold rounded-xl btn-bounce text-sm">
+                                    <i class="fa-solid fa-play mr-1"></i> Plot Graph
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Chart Canvas Container -->
+                        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 relative h-[320px] w-full">
+                            <canvas id="mathGraphCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-slate-500 text-center pt-2">
+                        JavaScript Math functions supported (e.g., <span class="code-font text-slate-400">Math.sin(x), Math.pow(x,2), Math.exp(-x)</span>)
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= SECTION 3: MATH ANIMATIONS & PROOFS ================= -->
+        <section id="section-animations" class="tab-content hidden space-y-8 animate-popup">
+            <div class="text-center max-w-2xl mx-auto space-y-2">
+                <span class="px-3 py-1 bg-mathCyan/20 text-mathCyan border border-mathCyan/30 rounded-full text-xs font-semibold uppercase tracking-wider">Visual Mathematics</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-100">Interactive Math Animations</h2>
+                <p class="text-slate-400 text-sm">Experience math visually through dynamic canvas physics, geometry proofs, and fractal generation.</p>
+            </div>
+
+            <!-- Animation Sub-Tab Selectors -->
+            <div class="flex flex-wrap justify-center gap-2">
+                <button onclick="selectAnimTab('pythagoras')" id="anim-tab-pythagoras" class="anim-nav-btn px-4 py-2 bg-mathPurple text-white rounded-xl text-sm font-semibold btn-bounce">
+                    <i class="fa-solid fa-triangle-circle-square mr-1"></i> Pythagoras Proof
+                </button>
+                <button onclick="selectAnimTab('sinewave')" id="anim-tab-sinewave" class="anim-nav-btn px-4 py-2 bg-slate-800 text-slate-300 hover:text-white rounded-xl text-sm font-semibold btn-bounce">
+                    <i class="fa-solid fa-wave-square mr-1"></i> Unit Circle & Sine Wave
+                </button>
+                <button onclick="selectAnimTab('fractal')" id="anim-tab-fractal" class="anim-nav-btn px-4 py-2 bg-slate-800 text-slate-300 hover:text-white rounded-xl text-sm font-semibold btn-bounce">
+                    <i class="fa-solid fa-tree mr-1"></i> Fractal Tree Generator
+                </button>
+                <button onclick="selectAnimTab('fourier')" id="anim-tab-fourier" class="anim-nav-btn px-4 py-2 bg-slate-800 text-slate-300 hover:text-white rounded-xl text-sm font-semibold btn-bounce">
+                    <i class="fa-solid fa-circle-nodes mr-1"></i> Epicycles (Fourier)
+                </button>
+            </div>
+
+            <!-- Canvas Container & Controls -->
+            <div class="glass-panel rounded-3xl p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <!-- Canvas Display -->
+                <div class="lg:col-span-8 bg-slate-950 rounded-2xl border border-slate-800 p-2 relative h-[380px] md:h-[440px] flex items-center justify-center overflow-hidden">
+                    <canvas id="animMainCanvas" class="w-full h-full rounded-xl"></canvas>
+                </div>
+
+                <!-- Interactive Sidebar Controls -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div id="anim-control-card" class="space-y-4">
+                        <!-- Dynamic Controls Injected Here via JS -->
+                    </div>
+
+                    <!-- Description Box -->
+                    <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs space-y-2">
+                        <span class="font-bold text-mathPink flex items-center gap-1">
+                            <i class="fa-solid fa-circle-info"></i> How it works:
+                        </span>
+                        <p id="anim-explanation" class="text-slate-400 leading-relaxed">
+                            Visual proof of $a^2 + b^2 = c^2$. Adjust sides $a$ and $b$ dynamically to watch the squares adapt in real-time!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= SECTION 4: GEOMETRY & CONSTANTS EXPLORER ================= -->
+        <section id="section-explorer" class="tab-content hidden space-y-8 animate-popup">
+            <div class="text-center max-w-2xl mx-auto space-y-2">
+                <span class="px-3 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-full text-xs font-semibold uppercase tracking-wider">Geometric Wonders & Constants</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-100">Math Explorer & Pop Cards</h2>
+                <p class="text-slate-400 text-sm">Interactive geometric calculators and famous mathematical constants.</p>
+            </div>
+
+            <!-- Famous Constants Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Pi Card -->
+                <div class="glass-panel p-6 rounded-3xl border border-purple-500/30 hover:border-mathPink transition-all duration-300 space-y-3 group cursor-pointer btn-bounce" onclick="openConstantModal('pi')">
+                    <div class="flex justify-between items-center">
+                        <span class="text-4xl font-extrabold text-mathPink font-serif">π</span>
+                        <span class="text-xs bg-mathPink/20 text-mathPink px-2.5 py-1 rounded-full font-bold">3.14159...</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-100">Archimedes' Constant (Pi)</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">Ratio of a circle's circumference to its diameter. Fundamental in trigonometry, waves, and physics.</p>
+                </div>
+
+                <!-- Euler Card -->
+                <div class="glass-panel p-6 rounded-3xl border border-cyan-500/30 hover:border-mathCyan transition-all duration-300 space-y-3 group cursor-pointer btn-bounce" onclick="openConstantModal('e')">
+                    <div class="flex justify-between items-center">
+                        <span class="text-4xl font-extrabold text-mathCyan font-serif">e</span>
+                        <span class="text-xs bg-mathCyan/20 text-mathCyan px-2.5 py-1 rounded-full font-bold">2.71828...</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-100">Euler's Number</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">The base of natural logarithms. Governs exponential growth, compound interest, and calculus decay curves.</p>
+                </div>
+
+                <!-- Golden Ratio Card -->
+                <div class="glass-panel p-6 rounded-3xl border border-yellow-500/30 hover:border-yellow-400 transition-all duration-300 space-y-3 group cursor-pointer btn-bounce" onclick="openConstantModal('phi')">
+                    <div class="flex justify-between items-center">
+                        <span class="text-4xl font-extrabold text-yellow-400 font-serif">Φ</span>
+                        <span class="text-xs bg-yellow-400/20 text-yellow-400 px-2.5 py-1 rounded-full font-bold">1.61803...</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-100">The Golden Ratio (Phi)</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">Appears in natural spirals, architecture, artwork, and Fibonacci sequences across living organisms.</p>
+                </div>
+            </div>
+
+            <!-- Interactive Geometry Calculator -->
+            <div class="glass-panel rounded-3xl p-6 space-y-6">
+                <h3 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-vector-square text-mathPink"></i> Quick Geometry Area & Perimeter Calculator
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Circle Calculator -->
+                    <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <h4 class="font-bold text-mathCyan text-base">Circle</h4>
+                        <div class="space-y-2">
+                            <label class="text-xs text-slate-400">Radius (r):</label>
+                            <input type="number" id="geo-radius" value="5" oninput="calcGeometry()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm code-font text-slate-200">
+                        </div>
+                        <div class="pt-2 text-xs space-y-1 text-slate-300">
+                            <p>Area: <span id="geo-circle-area" class="font-bold text-mathPink">78.54</span></p>
+                            <p>Circumference: <span id="geo-circle-perim" class="font-bold text-mathCyan">31.42</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Rectangle Calculator -->
+                    <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <h4 class="font-bold text-mathPink text-base">Rectangle</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-slate-400">Width (w):</label>
+                                <input type="number" id="geo-width" value="8" oninput="calcGeometry()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm code-font text-slate-200">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400">Height (h):</label>
+                                <input type="number" id="geo-height" value="4" oninput="calcGeometry()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm code-font text-slate-200">
+                            </div>
+                        </div>
+                        <div class="pt-2 text-xs space-y-1 text-slate-300">
+                            <p>Area: <span id="geo-rect-area" class="font-bold text-mathPink">32.00</span></p>
+                            <p>Perimeter: <span id="geo-rect-perim" class="font-bold text-mathCyan">24.00</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Sphere Calculator -->
+                    <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <h4 class="font-bold text-yellow-400 text-base">Sphere (3D)</h4>
+                        <div class="space-y-2">
+                            <label class="text-xs text-slate-400">Radius (R):</label>
+                            <input type="number" id="geo-sphere-r" value="3" oninput="calcGeometry()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm code-font text-slate-200">
+                        </div>
+                        <div class="pt-2 text-xs space-y-1 text-slate-300">
+                            <p>Volume: <span id="geo-sphere-vol" class="font-bold text-yellow-400">113.10</span></p>
+                            <p>Surface Area: <span id="geo-sphere-surf" class="font-bold text-mathCyan">113.10</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Interactive Constant Pop-up Modal -->
+    <div id="constant-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel bg-slate-900 max-w-md w-full rounded-3xl p-6 border border-slate-700 modal-pop relative space-y-4">
+            <button onclick="closeConstantModal()" class="absolute right-4 top-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="modal-content" class="space-y-3">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification / Toast Pop-up -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-800 border border-mathPurple text-white px-5 py-3 rounded-2xl shadow-2xl transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-50 flex items-center gap-3">
+        <i class="fa-solid fa-circle-check text-mathPink text-lg"></i>
+        <span id="toast-msg" class="text-sm font-medium">Notification message</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="glass-panel border-t border-slate-800/80 py-6 px-4 text-center text-xs text-slate-500 z-10 relative">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p>© Mathiverse - Interactive Mathematics & Visualizations</p>
+            <p class="flex items-center gap-2">
+                Designed with <i class="fa-solid fa-heart text-mathPink"></i> for Math & Science Lovers
+            </p>
+        </div>
+    </footer>
+
+
+    <!-- JavaScript Logic & Animations -->
+    <script>
+        // ==========================================
+        // 1. FLOATING MATH BACKGROUND SYMBOLS
+        // ==========================================
+        const symbols = ['π', '∑</', '√x', '∞', '∫', 'θ', 'Δ', 'λ', 'f(x)', 'e^x', 'α', 'β', 'sin(x)', '≠', '≈'];
+        const bgContainer = document.getElementById('math-bg');
+
+        function createFloatingSymbols() {
+            const count = 25;
+            for (let i = 0; i < count; i++) {
+                const span = document.createElement('span');
+                span.className = 'math-symbol animate-float-slow';
+                span.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                span.style.left = `${Math.random() * 100}%`;
+                span.style.top = `${Math.random() * 100}%`;
+                span.style.fontSize = `${Math.random() * 20 + 16}px`;
+                span.style.animationDelay = `${Math.random() * 5}s`;
+                span.style.color = Math.random() > 0.5 ? '#8B5CF6' : '#06B6D4';
+                bgContainer.appendChild(span);
+            }
+        }
+        createFloatingSymbols();
+
+        // ==========================================
+        // 2. TAB SWITCHING SYSTEM
+        // ==========================================
+        function switchTab(tabId) {
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(sec => sec.classList.add('hidden'));
+            
+            // Unselect tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-2";
+            });
+
+            // Show selected tab content
+            const activeSection = document.getElementById(`section-${tabId}`);
+            if (activeSection) {
+                activeSection.classList.remove('hidden');
+            }
+
+            // Highlight selected button
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 bg-gradient-to-r from-mathPurple to-mathPink text-white shadow-lg";
+            }
+
+            // Trigger recalculation or graph redraw on view switch
+            if(tabId === 'calculators' && chartInstance) {
+                setTimeout(() => chartInstance.resize(), 100);
+            }
+            if(tabId === 'animations') {
+                setTimeout(() => initAnimCanvas(), 100);
+            }
+        }
+
+        // ==========================================
+        // 3. FACTORISER & PRIME ALGORITHM
+        // ==========================================
+        function setFactorInput(val) {
+            document.getElementById('factor-input').value = val;
+            calculateFactors();
+        }
+
+        function randomizeFactorInput() {
+            const rand = Math.floor(Math.random() * 9000) + 100;
+            setFactorInput(rand);
+        }
+
+        function calculateFactors() {
+            const numInput = parseInt(document.getElementById('factor-input').value);
+            if (isNaN(numInput) || numInput <= 0) {
+                showToast("Please enter a valid positive integer!");
+                return;
+            }
+
+            const n = numInput;
+            let temp = n;
+            const primeFactorsMap = {};
+            const allFactors = [];
+
+            // Find prime factorization & all factors
+            for (let i = 1; i <= Math.sqrt(n); i++) {
+                if (n % i === 0) {
+                    allFactors.push(i);
+                    if (i * i !== n) {
+                        allFactors.push(n / i);
+                    }
+                }
+            }
+
+            allFactors.sort((a, b) => a - b);
+
+            // Prime Factorization
+            let d = 2;
+            let count2 = temp;
+            while (d * d <= count2) {
+                if (count2 % d === 0) {
+                    primeFactorsMap[d] = (primeFactorsMap[d] || 0) + 1;
+                    count2 /= d;
+                } else {
+                    d++;
+                }
+            }
+            if (count2 > 1) {
+                primeFactorsMap[count2] = (primeFactorsMap[count2] || 0) + 1;
+            }
+
+            // Stats
+            const isPrime = allFactors.length === 2;
+            const factorSum = allFactors.reduce((acc, curr) => acc + curr, 0);
+            const isPerfectSquare = Math.sqrt(n) % 1 === 0;
+
+            // Render stats
+            document.getElementById('res-type').innerText = isPrime ? "Prime Number" : "Composite";
+            document.getElementById('res-type').className = isPrime ? "text-sm font-bold text-emerald-400" : "text-sm font-bold text-mathCyan";
+            document.getElementById('res-count').innerText = allFactors.length;
+            document.getElementById('res-sum').innerText = factorSum.toLocaleString();
+            document.getElementById('res-square').innerText = isPerfectSquare ? "Yes (√" + Math.sqrt(n) + ")" : "No";
+
+            // LaTeX Prime Factor String
+            let latexStr = "";
+            const keys = Object.keys(primeFactorsMap);
+            if (keys.length === 0 || n === 1) {
+                latexStr = "1";
+            } else {
+                latexStr = keys.map(p => {
+                    const exp = primeFactorsMap[p];
+                    return exp > 1 ? `${p}^{${exp}}` : `${p}`;
+                }).join(" \\times ");
+            }
+
+            const latexContainer = document.getElementById('prime-factor-latex');
+            latexContainer.innerHTML = "";
+            if (typeof katex !== 'undefined') {
+                katex.render(`${n} = ` + latexStr, latexContainer, { throwOnError: false });
+            } else {
+                latexContainer.innerText = `${n} = ` + latexStr.replace(/\\times/g, "×").replace(/\^{([^}]+)}/g, "^$1");
+            }
+
+            // Render All Factors Badges
+            const container = document.getElementById('all-factors-container');
+            container.innerHTML = "";
+            allFactors.forEach(f => {
+                const chip = document.createElement('span');
+                const isP = isFactorPrime(f);
+                chip.className = `px-3 py-1 rounded-xl text-xs font-mono font-semibold btn-bounce ${isP ? 'bg-mathPink/20 text-mathPink border border-mathPink/40' : 'bg-slate-800 text-slate-300'}`;
+                chip.innerText = f;
+                container.appendChild(chip);
+            });
+
+            showToast(`Factorized ${n} successfully!`);
+        }
+
+        function isFactorPrime(num) {
+            if (num < 2) return false;
+            for (let i = 2; i <= Math.sqrt(num); i++) {
+                if (num % i === 0) return false;
+            }
+            return true;
+        }
+
+        function copyFactorsList() {
+            const container = document.getElementById('all-factors-container');
+            const text = Array.from(container.children).map(c => c.innerText).join(', ');
+            navigator.clipboard.writeText(text);
+            showToast("Factors copied to clipboard!");
+        }
+
+        // Initial Factorization Call
+        calculateFactors();
+
+
+        // ==========================================
+        // 4. SCIENTIFIC CALCULATOR LOGIC
+        // ==========================================
+        let calcExpr = "";
+        const calcDisplay = document.getElementById('calc-display');
+        const calcHist = document.getElementById('calc-history');
+
+        function calcAppend(val) {
+            calcExpr += val;
+            calcDisplay.innerText = calcExpr;
+        }
+
+        function calcFunc(fn) {
+            if (fn === 'sqrt') calcExpr += 'Math.sqrt(';
+            else if (fn === 'sin') calcExpr += 'Math.sin(';
+            else if (fn === 'cos') calcExpr += 'Math.cos(';
+            else if (fn === 'tan') calcExpr += 'Math.tan(';
+            else if (fn === 'log') calcExpr += 'Math.log10(';
+            calcDisplay.innerText = calcExpr;
+        }
+
+        function calcClear() {
+            calcExpr = "";
+            calcDisplay.innerText = "0";
+            calcHist.innerText = "";
+        }
+
+        function calcDel() {
+            calcExpr = calcExpr.slice(0, -1);
+            calcDisplay.innerText = calcExpr || "0";
+        }
+
+        function calcSolve() {
+            try {
+                if (!calcExpr) return;
+                calcHist.innerText = calcExpr + " =";
+                const res = Function('"use strict";return (' + calcExpr + ')')();
+                calcDisplay.innerText = Number.isInteger(res) ? res : Number(res).toFixed(6);
+                calcExpr = res.toString();
+                showToast("Calculated!");
+            } catch (err) {
+                calcDisplay.innerText = "Syntax Error";
+                calcExpr = "";
+            }
+        }
+
+
+        // ==========================================
+        // 5. CHART.JS 2D FUNCTION PLOTTER
+        // ==========================================
+        let chartInstance = null;
+
+        function initGraphPlotter() {
+            const ctx = document.getElementById('mathGraphCanvas').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'f(x)',
+                        data: [],
+                        borderColor: '#EC4899',
+                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94A3B8' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94A3B8' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+            updateChartPlot();
+        }
+
+        function setGraphPreset(type) {
+            const input = document.getElementById('graph-func-input');
+            if (type === 'sin') input.value = 'Math.sin(x)';
+            if (type === 'quadratic') input.value = 'Math.pow(x, 2) - 4';
+            if (type === 'dampened') input.value = 'Math.exp(-0.2 * Math.abs(x)) * Math.sin(3 * x)';
+            updateChartPlot();
+        }
+
+        function updateChartPlot() {
+            if (!chartInstance) return;
+            const expr = document.getElementById('graph-func-input').value;
+            const xVals = [];
+            const yVals = [];
+
+            try {
+                const func = new Function('x', `return ${expr};`);
+                for (let x = -10; x <= 10; x += 0.2) {
+                    xVals.push(x.toFixed(1));
+                    let y = func(x);
+                    yVals.push(isNaN(y) || !isFinite(y) ? null : y);
+                }
+
+                chartInstance.data.labels = xVals;
+                chartInstance.data.datasets[0].data = yVals;
+                chartInstance.update();
+            } catch (err) {
+                showToast("Error in Function syntax!");
+            }
+        }
+
+        initGraphPlotter();
+
+
+        // ==========================================
+        // 6. ANIMATIONS & CANVAS PROOFS
+        // ==========================================
+        let currentAnimTab = 'pythagoras';
+        let animCanvas, animCtx;
+        let animationFrameId;
+
+        // PYTHAGORAS STATE
+        let pythA = 120;
+        let pythB = 90;
+
+        // SINE WAVE STATE
+        let waveAngle = 0;
+
+        // FRACTAL STATE
+        let fractalAngle = 25;
+        let fractalDepth = 8;
+
+        function selectAnimTab(tabKey) {
+            currentAnimTab = tabKey;
+            document.querySelectorAll('.anim-nav-btn').forEach(btn => {
+                btn.className = "anim-nav-btn px-4 py-2 bg-slate-800 text-slate-300 hover:text-white rounded-xl text-sm font-semibold btn-bounce";
+            });
+            document.getElementById(`anim-tab-${tabKey}`).className = "anim-nav-btn px-4 py-2 bg-mathPurple text-white rounded-xl text-sm font-semibold btn-bounce";
+
+            renderAnimControls();
+        }
+
+        function renderAnimControls() {
+            const ctrlContainer = document.getElementById('anim-control-card');
+            const explain = document.getElementById('anim-explanation');
+
+            if (currentAnimTab === 'pythagoras') {
+                ctrlContainer.innerHTML = `
+                    <h3 class="font-bold text-slate-200 text-base">Pythagoras Controls</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                <span>Side A length:</span>
+                                <span id="val-pyth-a" class="font-bold text-mathPink">${pythA}</span>
+                            </div>
+                            <input type="range" min="50" max="180" value="${pythA}" oninput="pythA=parseInt(this.value); document.getElementById('val-pyth-a').innerText=this.value" class="w-full accent-mathPink">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                <span>Side B length:</span>
+                                <span id="val-pyth-b" class="font-bold text-mathCyan">${pythB}</span>
+                            </div>
+                            <input type="range" min="50" max="180" value="${pythB}" oninput="pythB=parseInt(this.value); document.getElementById('val-pyth-b').innerText=this.value" class="w-full accent-mathCyan">
+                        </div>
+                    </div>
+                `;
+                explain.innerText = "Pythagorean Theorem: a² + b² = c². The area of the square constructed on the hypotenuse (c) equals the sum of the areas of the squares on the other two sides.";
+            } else if (currentAnimTab === 'sinewave') {
+                ctrlContainer.innerHTML = `
+                    <h3 class="font-bold text-slate-200 text-base">Sine Wave Unit Circle</h3>
+                    <p class="text-xs text-slate-400">Watch the vertical displacement of a point traveling around the unit circle trace out a continuous sine wave!</p>
+                `;
+                explain.innerText = "As a point moves around the unit circle, its y-coordinate maps directly to sin(θ) over time.";
+            } else if (currentAnimTab === 'fractal') {
+                ctrlContainer.innerHTML = `
+                    <h3 class="font-bold text-slate-200 text-base">Recursive Tree Controls</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                <span>Branching Angle (°):</span>
+                                <span id="val-frac-ang" class="font-bold text-yellow-400">${fractalAngle}</span>
+                            </div>
+                            <input type="range" min="5" max="60" value="${fractalAngle}" oninput="fractalAngle=parseInt(this.value); document.getElementById('val-frac-ang').innerText=this.value" class="w-full accent-yellow-400">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                <span>Recursion Depth:</span>
+                                <span id="val-frac-dep" class="font-bold text-mathPink">${fractalDepth}</span>
+                            </div>
+                            <input type="range" min="3" max="10" value="${fractalDepth}" oninput="fractalDepth=parseInt(this.value); document.getElementById('val-frac-dep').innerText=this.value" class="w-full accent-mathPink">
+                        </div>
+                    </div>
+                `;
+                explain.innerText = "Fractals exhibit self-similarity. Each branch splits recursively into smaller sub-branches governed by simple geometric rules.";
+            } else if (currentAnimTab === 'fourier') {
+                ctrlContainer.innerHTML = `
+                    <h3 class="font-bold text-slate-200 text-base">Fourier Epicycles</h3>
+                    <p class="text-xs text-slate-400">Rotating circular vectors combined together to approximate a square wave harmonics signal!</p>
+                `;
+                explain.innerText = "Fourier Series states any periodic wave can be synthesized using an infinite sum of simple rotating sine waves (epicycles).";
+            }
+        }
+
+        function initAnimCanvas() {
+            animCanvas = document.getElementById('animMainCanvas');
+            if (!animCanvas) return;
+            animCtx = animCanvas.getContext('2d');
+
+            // Set dynamic internal size based on display size
+            animCanvas.width = animCanvas.parentElement.clientWidth;
+            animCanvas.height = animCanvas.parentElement.clientHeight;
+
+            renderAnimControls();
+            
+            if(animationFrameId) cancelAnimationFrame(animationFrameId);
+            loopAnimation();
+        }
+
+        function loopAnimation() {
+            if (!animCtx) return;
+            animCtx.clearRect(0, 0, animCanvas.width, animCanvas.height);
+
+            if (currentAnimTab === 'pythagoras') drawPythagoras();
+            else if (currentAnimTab === 'sinewave') drawSineWave();
+            else if (currentAnimTab === 'fractal') drawFractalTree();
+            else if (currentAnimTab === 'fourier') drawFourierEpicycles();
+
+            animationFrameId = requestAnimationFrame(loopAnimation);
+        }
+
+        // Animation 1: Pythagoras Proof
+        function drawPythagoras() {
+            const cW = animCanvas.width;
+            const cH = animCanvas.height;
+            const startX = cW / 2 - pythA / 2;
+            const startY = cH / 2 + pythB / 2;
+
+            // Draw Right Triangle
+            animCtx.lineWidth = 3;
+            animCtx.strokeStyle = '#FFFFFF';
+            animCtx.beginPath();
+            animCtx.moveTo(startX, startY);
+            animCtx.lineTo(startX + pythA, startY);
+            animCtx.lineTo(startX + pythA, startY - pythB);
+            animCtx.closePath();
+            animCtx.stroke();
+
+            // Square A (Bottom)
+            animCtx.fillStyle = 'rgba(236, 72, 153, 0.3)';
+            animCtx.strokeStyle = '#EC4899';
+            animCtx.fillRect(startX, startY, pythA, pythA);
+            animCtx.strokeRect(startX, startY, pythA, pythA);
+
+            // Square B (Right)
+            animCtx.fillStyle = 'rgba(6, 182, 212, 0.3)';
+            animCtx.strokeStyle = '#06B6D4';
+            animCtx.fillRect(startX + pythA, startY - pythB, pythB, pythB);
+            animCtx.strokeRect(startX + pythA, startY - pythB, pythB, pythB);
+
+            // Square C (Hypotenuse)
+            const hyp = Math.sqrt(pythA * pythA + pythB * pythB);
+            const angle = Math.atan2(pythB, pythA);
+
+            animCtx.save();
+            animCtx.translate(startX, startY);
+            animCtx.rotate(-angle);
+            animCtx.fillStyle = 'rgba(139, 92, 246, 0.3)';
+            animCtx.strokeStyle = '#8B5CF6';
+            animCtx.fillRect(0, -hyp, hyp, hyp);
+            animCtx.strokeRect(0, -hyp, hyp, hyp);
+            animCtx.restore();
+
+            // Labels
+            animCtx.fillStyle = '#FFFFFF';
+            animCtx.font = 'bold 14px Fredoka';
+            animCtx.fillText(`a² = ${(pythA*pythA)}`, startX + pythA/3, startY + pythA/2);
+            animCtx.fillText(`b² = ${(pythB*pythB)}`, startX + pythA + 10, startY - pythB/2);
+        }
+
+        // Animation 2: Sine Wave & Unit Circle
+        const wavePoints = [];
+        function drawSineWave() {
+            const cW = animCanvas.width;
+            const cH = animCanvas.height;
+            const circleRadius = 70;
+            const circleCenterX = 120;
+            const circleCenterY = cH / 2;
+
+            waveAngle += 0.03;
+
+            // Unit Circle
+            animCtx.strokeStyle = 'rgba(255,255,255,0.2)';
+            animCtx.lineWidth = 2;
+            animCtx.beginPath();
+            animCtx.arc(circleCenterX, circleCenterY, circleRadius, 0, Math.PI * 2);
+            animCtx.stroke();
+
+            // Rotating Point
+            const px = circleCenterX + circleRadius * Math.cos(waveAngle);
+            const py = circleCenterY - circleRadius * Math.sin(waveAngle);
+
+            animCtx.fillStyle = '#EC4899';
+            animCtx.beginPath();
+            animCtx.arc(px, py, 6, 0, Math.PI * 2);
+            animCtx.fill();
+
+            // Connecting line
+            animCtx.strokeStyle = 'rgba(236, 72, 153, 0.5)';
+            animCtx.beginPath();
+            animCtx.moveTo(px, py);
+            animCtx.lineTo(240, py);
+            animCtx.stroke();
+
+            // Wave trail
+            wavePoints.unshift(py);
+            if (wavePoints.length > cW - 240) wavePoints.pop();
+
+            animCtx.strokeStyle = '#06B6D4';
+            animCtx.lineWidth = 3;
+            animCtx.beginPath();
+            for (let i = 0; i < wavePoints.length; i++) {
+                animCtx.lineTo(240 + i, wavePoints[i]);
+            }
+            animCtx.stroke();
+        }
+
+        // Animation 3: Fractal Tree
+        function drawFractalTree() {
+            const cW = animCanvas.width;
+            const cH = animCanvas.height;
+
+            animCtx.save();
+            animCtx.translate(cW / 2, cH - 20);
+            branch(80, 0);
+            animCtx.restore();
+        }
+
+        function branch(len, depth) {
+            animCtx.lineWidth = Math.max(1, (fractalDepth - depth));
+            animCtx.strokeStyle = depth > fractalDepth - 3 ? '#EC4899' : '#8B5CF6';
+
+            animCtx.beginPath();
+            animCtx.moveTo(0, 0);
+            animCtx.lineTo(0, -len);
+            animCtx.stroke();
+
+            animCtx.translate(0, -len);
+
+            if (depth < fractalDepth) {
+                const rad = (fractalAngle * Math.PI) / 180;
+                
+                animCtx.save();
+                animCtx.rotate(rad);
+                branch(len * 0.72, depth + 1);
+                animCtx.restore();
+
+                animCtx.save();
+                animCtx.rotate(-rad);
+                branch(len * 0.72, depth + 1);
+                animCtx.restore();
+            }
+        }
+
+        // Animation 4: Fourier Epicycles
+        let fourierTime = 0;
+        const fourierPath = [];
+        function drawFourierEpicycles() {
+            const cW = animCanvas.width;
+            const cH = animCanvas.height;
+            let x = 150;
+            let y = cH / 2;
+
+            for (let i = 0; i < 5; i++) {
+                let prevX = x;
+                let prevY = y;
+                let n = i * 2 + 1;
+                let radius = 50 * (4 / (n * Math.PI));
+
+                x += radius * Math.cos(n * fourierTime);
+                y += radius * Math.sin(n * fourierTime);
+
+                animCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+                animCtx.beginPath();
+                animCtx.arc(prevX, prevY, radius, 0, Math.PI * 2);
+                animCtx.stroke();
+
+                animCtx.strokeStyle = '#06B6D4';
+                animCtx.beginPath();
+                animCtx.moveTo(prevX, prevY);
+                animCtx.lineTo(x, y);
+                animCtx.stroke();
+            }
+
+            fourierPath.unshift(y);
+            if (fourierPath.length > cW - 350) fourierPath.pop();
+
+            animCtx.strokeStyle = '#EC4899';
+            animCtx.lineWidth = 3;
+            animCtx.beginPath();
+            for (let i = 0; i < fourierPath.length; i++) {
+                animCtx.lineTo(350 + i, fourierPath[i]);
+            }
+            animCtx.stroke();
+
+            fourierTime += 0.03;
+        }
+
+        window.addEventListener('resize', initAnimCanvas);
+        initAnimCanvas();
+
+
+        // ==========================================
+        // 7. GEOMETRY & CONSTANTS EXPLORER
+        // ==========================================
+        function calcGeometry() {
+            // Circle
+            const r = parseFloat(document.getElementById('geo-radius').value) || 0;
+            document.getElementById('geo-circle-area').innerText = (Math.PI * r * r).toFixed(2);
+            document.getElementById('geo-circle-perim').innerText = (2 * Math.PI * r).toFixed(2);
+
+            // Rectangle
+            const w = parseFloat(document.getElementById('geo-width').value) || 0;
+            const h = parseFloat(document.getElementById('geo-height').value) || 0;
+            document.getElementById('geo-rect-area').innerText = (w * h).toFixed(2);
+            document.getElementById('geo-rect-perim').innerText = (2 * (w + h)).toFixed(2);
+
+            // Sphere
+            const sr = parseFloat(document.getElementById('geo-sphere-r').value) || 0;
+            document.getElementById('geo-sphere-vol').innerText = ((4/3) * Math.PI * Math.pow(sr, 3)).toFixed(2);
+            document.getElementById('geo-sphere-surf').innerText = (4 * Math.PI * sr * sr).toFixed(2);
+        }
+
+        const constantDetails = {
+            pi: {
+                title: "Archimedes' Constant (π)",
+                val: "3.14159265358979323846...",
+                desc: "Pi is the ratio of a circle's circumference to its diameter. It is an irrational number, meaning its decimal representation never ends and never repeats."
+            },
+            e: {
+                title: "Euler's Number (e)",
+                val: "2.71828182845904523536...",
+                desc: "Euler's number is the mathematical constant that serves as the unique base for natural logarithms. It naturally emerges from compound interest formulas and growth calculus."
+            },
+            phi: {
+                title: "The Golden Ratio (Φ)",
+                val: "1.61803398874989484820...",
+                desc: "Two quantities are in the golden ratio if their ratio is the same as the ratio of their sum to the larger of the two quantities. Prominent in Fibonacci sequences and natural patterns."
+            }
+        };
+
+        function openConstantModal(key) {
+            const data = constantDetails[key];
+            const content = document.getElementById('modal-content');
+            content.innerHTML = `
+                <h3 class="text-xl font-bold text-mathPink">${data.title}</h3>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-cyan-300 font-mono text-sm break-all">
+                    ${data.val}
+                </div>
+                <p class="text-slate-300 text-xs leading-relaxed">${data.desc}</p>
+            `;
+            document.getElementById('constant-modal').classList.remove('hidden');
+        }
+
+        function closeConstantModal() {
+            document.getElementById('constant-modal').classList.add('hidden');
+        }
+
+
+        // ==========================================
+        // 8. POP-UP TOAST NOTIFIER
+        // ==========================================
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
